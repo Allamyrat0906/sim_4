@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Falling-Ball Viscometer Simulation</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f0f0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+
+      .container {
+        background-color: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        max-width: 800px;
+        width: 100%;
+      }
+
+      h1 {
+        font-size: 24px;
+        margin-bottom: 20px;
+      }
+
+      canvas {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-top: 20px;
+      }
+
+      button {
+        margin-top: 20px;
+        padding: 10px 20px;
+        font-size: 16px;
+        color: white;
+        background-color: #007bff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Falling-Ball Viscometer Simulation</h1>
+      <canvas id="viscometerCanvas" width="600" height="400"></canvas>
+      <button onclick="measureViscosity()">Measure Viscosity</button>
+    </div>
+
+    <script>
+      const canvas = document.getElementById("viscometerCanvas");
+      const ctx = canvas.getContext("2d");
+
+      const ball = {
+        radius: 10,
+        x: canvas.width / 2,
+        y: -50, // Start above the canvas
+        speed: 0,
+        time: 0,
+        fluidDensity: 1.2, // Density of the fluid (example)
+        fluidViscosity: 0.1, // Viscosity of the fluid (example)
+        gravity: 9.81, // Acceleration due to gravity (m/s^2)
+        isMeasuring: false,
+      };
+
+      let lastTimestamp = 0;
+
+      function measureViscosity() {
+        if (!ball.isMeasuring) {
+          ball.isMeasuring = true;
+          ball.y = -ball.radius; // Reset ball position
+          ball.speed = 0;
+          ball.time = 0;
+          lastTimestamp = performance.now();
+          requestAnimationFrame(updateViscometer);
+        }
+      }
+
+      function updateViscometer(timestamp) {
+        const deltaTime = timestamp - lastTimestamp;
+        lastTimestamp = timestamp;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (ball.isMeasuring) {
+          // Calculate forces acting on the ball (gravity and viscous drag)
+          const gravityForce =
+            ball.gravity *
+            ball.fluidDensity *
+            Math.PI *
+            ball.radius *
+            ball.radius; // F = m * g = density * volume * g
+          const viscousDragForce =
+            6 * Math.PI * ball.radius * ball.fluidViscosity * ball.speed; // F = 6 * pi * viscosity * radius * speed
+
+          // Calculate net force and acceleration
+          const netForce = gravityForce - viscousDragForce;
+          const acceleration =
+            netForce /
+            (ball.fluidDensity * Math.PI * ball.radius * ball.radius); // a = F / m = net force / mass
+
+          // Update speed and position
+          ball.speed += acceleration * (deltaTime / 1000); // Convert time to seconds
+          ball.y += ball.speed * (deltaTime / 1000); // Convert time to seconds
+
+          // Draw fluid
+          ctx.fillStyle = "#e0f2f1"; // Light blue color for water
+          ctx.fillRect(0, canvas.height / 2, canvas.width, canvas.height / 2);
+
+          // Draw ball
+          ctx.beginPath();
+          ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+          ctx.fillStyle = "#f44336"; // Red color for ball
+          ctx.fill();
+
+          // Draw measuring line
+          ctx.beginPath();
+          ctx.moveTo(ball.x - ball.radius, 0);
+          ctx.lineTo(ball.x - ball.radius, canvas.height / 2);
+          ctx.strokeStyle = "#333";
+          ctx.stroke();
+
+          // Display time and speed
+          ctx.fillStyle = "#000";
+          ctx.font = "16px Arial";
+          ctx.fillText(
+            `Time: ${(ball.time / 1000).toFixed(2)} seconds`,
+            20,
+            30
+          );
+          ctx.fillText(`Speed: ${ball.speed.toFixed(2)} m/s`, 20, 50);
+
+          // Check if ball has reached the fluid level
+          if (ball.y >= canvas.height / 2 - ball.radius) {
+            ball.isMeasuring = false;
+            ball.speed = 0;
+            ball.time = 0;
+            alert(
+              `Viscosity Measurement Completed.\nViscosity: ${ball.fluidViscosity.toFixed(
+                2
+              )} Pa*s`
+            );
+          } else {
+            requestAnimationFrame(updateViscometer);
+          }
+        }
+      }
+    </script>
+  </body>
+</html>
